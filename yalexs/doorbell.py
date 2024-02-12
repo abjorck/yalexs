@@ -10,11 +10,16 @@ from .backports.functools import cached_property
 from .device import Device, DeviceDetail
 from .time import parse_datetime
 
+import logging
+
+_LOGGER = logging.getLogger(__name__)
+
 DOORBELL_STATUS_KEY = "status"
 
 
 class Doorbell(Device):
     def __init__(self, device_id: str, data: dict[str, Any]) -> None:
+        _LOGGER.info("Doorbell init - %s", data["name"])
         super().__init__(device_id, data["name"], data["HouseID"])
         self._serial_number = data["serialNumber"]
         self._status = data["status"]
@@ -132,10 +137,20 @@ class DoorbellDetail(DeviceDetail):
     def image_url(self):
         return self._image_url
 
+    @property
+    def content_token(self):
+        return self._content_token
+
     @image_url.setter
     def image_url(self, var):
+        _LOGGER.debug("image_url updated for %s", self.device_name)
         """Update the doorbell image url (usually form the activity log)."""
         self._image_url = var
+
+    @content_token.setter
+    def content_token(self, var):
+        _LOGGER.debug("content_token updated for %s", self.device_name)
+        self._content_token = var or ""
 
     @cached_property
     def battery_level(self):
@@ -149,17 +164,26 @@ class DoorbellDetail(DeviceDetail):
     async def async_get_doorbell_image(
         self, aiohttp_session: ClientSession, timeout=10
     ) -> bytes:
+        _LOGGER.debug("async_get_doorbell_image %s", self.device_name)
+        if (self._content_token == "" or self._content_token is None):
+            _LOGGER.warn("!!!!!!!!! content-token is missing")
         response = await aiohttp_session.request(
             "get",
             self._image_url,
             timeout=timeout,
-            headers={"Authorization": self._content_token},
+            headers={"Authorization": self._content_token or ""},
         )
+        if (response.status != 200):
+            _LOGGER.error("doorbell image response: %s,%s \n    %s", response.status, self.device_name, self.content_token)
+        if (response.status == 401):
+            _LOGGER.error("auth error, may need new content token")
+            raise ValueError(401)
         return await response.read()
 
     def get_doorbell_image(self, timeout=10) -> bytes:
+        _LOGGER.debug("get_doorbell_image sync %s", self.device_name)
         return requests.get(
             self._image_url,
             timeout=timeout,
-            headers={"Authorization": self._content_token},
+            headers={"Authorization": self._content_token or ""},
         ).content
