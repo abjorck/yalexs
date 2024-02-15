@@ -63,6 +63,11 @@ def activities_from_pubnub_message(
         # Only accept a UserID if we have a date/time
         # as otherwise it is a duplicate of the previous
         # activity
+
+        if info.get("action") == "status":
+            _LOGGER.debug("Not creating lock activity from status pubnub")
+            return activities
+
         if accept_user and calling_user_id:
             activity_dict["callingUser"] = {"UserID": calling_user_id}
         if "remoteEvent" in message:
