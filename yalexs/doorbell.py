@@ -165,19 +165,15 @@ class DoorbellDetail(DeviceDetail):
         self, aiohttp_session: ClientSession, timeout=10
     ) -> bytes:
         _LOGGER.debug("async_get_doorbell_image %s", self.device_name)
-        if (self._content_token == "" or self._content_token is None):
-            _LOGGER.warn("!!!!!!!!! content-token is missing")
         response = await aiohttp_session.request(
             "get",
             self._image_url,
             timeout=timeout,
             headers={"Authorization": self._content_token or ""},
         )
-        if (response.status != 200):
-            _LOGGER.error("doorbell image response: %s,%s \n    %s", response.status, self.device_name, self.content_token)
-        if (response.status == 401):
-            _LOGGER.error("auth error, may need new content token")
-            raise ValueError(401)
+        if (response.status >= 400):
+            _LOGGER.error("snapshot get error %s, may need new content token", response.status)
+            raise ValueError(response.status)
         return await response.read()
 
     def get_doorbell_image(self, timeout=10) -> bytes:
