@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import logging
 from typing import Any
 
 from aiohttp import ClientSession
@@ -9,8 +10,6 @@ import requests
 from .backports.functools import cached_property
 from .device import Device, DeviceDetail
 from .time import parse_datetime
-
-import logging
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -143,8 +142,8 @@ class DoorbellDetail(DeviceDetail):
 
     @image_url.setter
     def image_url(self, var):
-        _LOGGER.debug("image_url updated for %s", self.device_name)
         """Update the doorbell image url (usually form the activity log)."""
+        _LOGGER.debug("image_url updated for %s", self.device_name)
         self._image_url = var
 
     @content_token.setter
@@ -171,8 +170,10 @@ class DoorbellDetail(DeviceDetail):
             timeout=timeout,
             headers={"Authorization": self._content_token or ""},
         )
-        if (response.status >= 400):
-            _LOGGER.error("snapshot get error %s, may need new content token", response.status)
+        if response.status >= 400:
+            _LOGGER.error(
+                "snapshot get error %s, may need new content token", response.status
+            )
             raise ValueError(response.status)
         return await response.read()
 

@@ -258,7 +258,7 @@ class BaseDoorbellMotionActivity(Activity):
         """Initialize doorbell motion activity."""
         super().__init__(source, activity_type, data)
         self._image: dict[str, Any] | None = data.get("info", {}).get("image")
-        self._content_token = data.get("doorbell", {}).get("contentToken") 
+        self._content_token = data.get("doorbell", {}).get("contentToken")
 
     def __repr__(self):
         return (
@@ -276,7 +276,7 @@ class BaseDoorbellMotionActivity(Activity):
         return (None if image is None else image.get("secure_url")) or self._data.get(
             "attachment"
         )
-    
+
     @cached_property
     def content_token(self):
         """Return the contentToken for the image URL"""
@@ -315,7 +315,11 @@ class DoorbellBaseActionActivity(Activity):
     @cached_property
     def image_url(self):
         """Return the image URL of the activity."""
-        return self._info.get("image") or self._info.get("attachment") or self._data.get("attachment")
+        return (
+            self._info.get("image")
+            or self._info.get("attachment")
+            or self._data.get("attachment")
+        )
 
     @cached_property
     def content_token(self):
