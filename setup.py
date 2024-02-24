@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="yalexs",
-    version="1.11.2",
+    version="1.12.0",
     python_requires=">=3.9",
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -13,6 +13,7 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     url="https://github.com/bdraco/yalexs",
     license="MIT",
