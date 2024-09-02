@@ -3,6 +3,12 @@ import random
 import ssl
 from functools import cache
 from typing import Optional, Union, TYPE_CHECKING
+import pytz
+import logging
+
+utc=pytz.UTC
+
+_LOGGER = logging.getLogger(__name__)
 
 from .activity import (
     ACTION_BRIDGE_OFFLINE,
@@ -15,6 +21,7 @@ from .activity import (
     DoorbellMotionActivity,
     DoorOperationActivity,
     LockOperationActivity,
+    DoorbellSettingsChangeActivity,
 )
 from .const import CONFIGURATION_URLS, Brand
 from .lock import LockDetail
@@ -95,21 +102,26 @@ def update_doorbell_image_from_activity(
     if isinstance(activity, (DoorbellImageCaptureActivity, DoorbellMotionActivity)):
         if activity.image_created_at_datetime is None:
             return False
+        _LOGGER.info("update_doorbell_image_from_activity %s", activity)
+        new_datetime = activity.image_created_at_datetime
+        if (new_datetime.tzinfo is None):
+            new_datetime = utc.localize(new_datetime)
 
         if (
             doorbell_detail.image_created_at_datetime is None
             or doorbell_detail.image_created_at_datetime
-            < activity.image_created_at_datetime
+            < new_datetime
         ):
             doorbell_detail.image_url = activity.image_url
-            doorbell_detail.image_created_at_datetime = (
-                activity.image_created_at_datetime
-            )
+            doorbell_detail.image_created_at_datetime = new_datetime
+            
             doorbell_detail.content_token = (
                 activity.content_token or doorbell_detail.content_token
             )
         else:
             return False
+    elif isinstance(activity, DoorbellSettingsChangeActivity):
+        doorbell_detail.update_settings(activity.settings())
     else:
         raise ValueError
 

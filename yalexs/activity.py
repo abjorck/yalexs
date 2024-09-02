@@ -9,6 +9,11 @@ from .backports.functools import cached_property
 from .lock import LockDoorStatus, LockStatus
 from .time import epoch_to_datetime, parse_datetime
 from .users import YaleUser, get_user_info
+import logging
+import json
+
+
+_LOGGER = logging.getLogger(__name__)
 
 ACTION_LOCK_ONETOUCHLOCK = "onetouchlock"
 ACTION_LOCK_ONETOUCHLOCK_2 = "one_touch_lock"
@@ -49,6 +54,7 @@ ACTION_DOORBELL_CALL_INITIATED = "doorbell_call_initiated"
 ACTION_DOORBELL_MOTION_DETECTED = "doorbell_motion_detected"
 ACTION_DOORBELL_CALL_MISSED = "doorbell_call_missed"
 ACTION_DOORBELL_CALL_HANGUP = "doorbell_call_hangup"
+ACTION_DOORBELL_SETTINGS_CHANGED = "doorbell_settings_changed"
 ACTION_LOCK_DOORBELL_BUTTON_PUSHED = "lock_accessory_motion_detect"
 
 ACTION_BRIDGE_ONLINE = "associated_bridge_online"  # pubnub only
@@ -67,6 +73,7 @@ ACTIVITY_ACTIONS_DOORBELL_DING = {
 ACTIVITY_ACTIONS_DOORBELL_IMAGE_CAPTURE = {ACTION_DOORBELL_IMAGE_CAPTURE}
 ACTIVITY_ACTIONS_DOORBELL_MOTION = {ACTION_DOORBELL_MOTION_DETECTED}
 ACTIVITY_ACTIONS_DOORBELL_VIEW = {ACTION_DOORBELL_CALL_INITIATED}
+ACTIVITY_ACTIONS_DOORBELL_SETTINGS = {ACTION_DOORBELL_SETTINGS_CHANGED}
 ACTIVITY_ACTIONS_LOCK_OPERATION = {
     ACTION_RF_SECURE,
     ACTION_RF_LOCK,
@@ -229,6 +236,7 @@ class ActivityType(Enum):
     DOOR_OPERATION = "door_operation"
     BRIDGE_OPERATION = "bridge_operation"
     DOORBELL_IMAGE_CAPTURE = "doorbell_image_capture"
+    DOORBELL_SETTINGS_CHANGE = "doorbell_settings_changed"
 
 
 class Activity:
@@ -358,6 +366,17 @@ class BaseDoorbellMotionActivity(Activity):
         if "created_at" in image:
             return parse_datetime(image["created_at"])
         return self.activity_start_time
+
+class DoorbellSettingsChangeActivity(Activity):
+    """Doorbell settings were changed"""
+
+    def __init__(self, source: str, data: dict[str, Any]) -> None:
+        """Initialize doorbell settings changed activity"""
+        _LOGGER.info("DoorbellSettingsChangeActivity created %s", json.dumps(data))
+        super().__init__(source, ActivityType.DOORBELL_SETTINGS_CHANGE, data)
+    
+    def settings(self) -> dict[str, Any]:
+        return self._data
 
 
 class DoorbellMotionActivity(BaseDoorbellMotionActivity):
@@ -572,6 +591,7 @@ ActivityTypes = Union[
     LockOperationActivity,
     DoorOperationActivity,
     BridgeOperationActivity,
+    DoorbellSettingsChangeActivity,
 ]
 
 ACTIONS_TO_CLASS = (
@@ -579,6 +599,7 @@ ACTIONS_TO_CLASS = (
     (ACTIVITY_ACTIONS_DOORBELL_MOTION, DoorbellMotionActivity),
     (ACTIVITY_ACTIONS_DOORBELL_IMAGE_CAPTURE, DoorbellImageCaptureActivity),
     (ACTIVITY_ACTIONS_DOORBELL_VIEW, DoorbellViewActivity),
+    (ACTIVITY_ACTIONS_DOORBELL_SETTINGS, DoorbellSettingsChangeActivity),
     (ACTIVITY_ACTIONS_LOCK_OPERATION, LockOperationActivity),
     (ACTIVITY_ACTIONS_DOOR_OPERATION, DoorOperationActivity),
     (ACTIVITY_ACTIONS_BRIDGE_OPERATION, BridgeOperationActivity),

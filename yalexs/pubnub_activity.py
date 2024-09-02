@@ -10,6 +10,7 @@ from .activity import (
     ACTION_DOORBELL_BUTTON_PUSHED,
     ACTION_DOORBELL_IMAGE_CAPTURE,
     ACTION_DOORBELL_MOTION_DETECTED,
+    ACTION_DOORBELL_SETTINGS_CHANGED,
     ACTION_LOCK_JAMMED,
     ACTION_LOCK_LOCK,
     ACTION_LOCK_LOCKING,
@@ -118,6 +119,7 @@ def activities_from_pubnub_message(
             ACTION_DOORBELL_MOTION_DETECTED,
             ACTION_DOORBELL_IMAGE_CAPTURE,
             ACTION_DOORBELL_BUTTON_PUSHED,
+            ACTION_DOORBELL_SETTINGS_CHANGED,
         ):
             _add_activity(activities, activity_dict, status)
 

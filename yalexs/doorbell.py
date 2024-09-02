@@ -4,8 +4,9 @@ import datetime
 import logging
 from typing import Any
 
-import requests
 from aiohttp import ClientSession
+import requests
+import json
 
 from yalexs.exceptions import ContentTokenExpired
 
@@ -30,6 +31,8 @@ class Doorbell(Device):
         self._image_url = recent_image.get("secure_url", None)
         self._has_subscription = data.get("dvrSubscriptionSetupDone", False)
         self._content_token = data.get("contentToken", "")
+        self.settings = data.get("settings", {})
+        _LOGGER.info("Doorbell settings, %s", json.dumps(self.settings))
 
     @cached_property
     def serial_number(self):
@@ -46,6 +49,12 @@ class Doorbell(Device):
     @cached_property
     def is_online(self):
         return self.status == "doorbell_call_status_online"
+
+
+    @cached_property
+    def is_on(self):
+        _LOGGER.info("is_on?, %s ", json.dumps(self.settings))
+        return self.settings.get("device", {}).get("enabled", True)
 
     @cached_property
     def image_url(self):
@@ -79,13 +88,14 @@ class DoorbellDetail(DeviceDetail):
             data,
         )
 
-        self._status: str = data["status"]
-        recent_image: dict[str, Any] = data.get("recentImage", {})
-        self._image_url: str | None = recent_image.get("secure_url")
-        self._has_subscription: bool = data.get("dvrSubscriptionSetupDone", False)
-        self._image_created_at_datetime: datetime.datetime | None = None
-        self._model: str | int | None = None
-        self._content_token: str = data.get("contentToken", "")
+        self._status = data["status"]
+        recent_image = data.get("recentImage", {})
+        self._image_url = recent_image.get("secure_url", None)
+        self._has_subscription = data.get("dvrSubscriptionSetupDone", False)
+        self._image_created_at_datetime = None
+        self._model = None
+        self._content_token = data.get("contentToken", "")
+        self._settings = data.get("settings", {})
 
         if "type" in data:
             self._model = data["type"]
@@ -179,6 +189,7 @@ class DoorbellDetail(DeviceDetail):
             headers={"Authorization": self._content_token or ""},
         )
         if response.status == 401:
+
             _LOGGER.debug(
                 "snapshot get error %s, may need new content token", response.status
             )
@@ -192,3 +203,7 @@ class DoorbellDetail(DeviceDetail):
             timeout=timeout,
             headers={"Authorization": self._content_token or ""},
         ).content
+
+    def update_settings(self, settings: dict[str, Any]) -> None: 
+        _LOGGER.info("Update doorbell settings! %s", json.dumps(settings))
+
